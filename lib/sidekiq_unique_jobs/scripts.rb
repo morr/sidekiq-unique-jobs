@@ -24,6 +24,10 @@ module SidekiqUniqueJobs
 
     def call(file_name, redis_pool, options = {})
       connection(redis_pool) do |redis|
+        # dirty fix to silence warning https://github.com/mhenrixon/sidekiq-unique-jobs/issues/212
+        if defined?(Redis::Namespace) && redis.instance_of?(Redis::Namespace)
+          redis = redis.redis
+        end
         script_shas[file_name] ||= redis.script(:load, script_source(file_name))
         redis.evalsha(script_shas[file_name], options)
       end
